@@ -1,0 +1,27 @@
+- hosts: localhost
+  vars:
+    resource_group: myResourceGroup
+    location: eastus 
+    instance_name: 
+    image: mongo:latest
+  tasks:
+    - name: Login to Azure
+      shell: az login --username "{{lookup('env', 'email')}}" --password "{{lookup('env', 'password')}}"
+      register: ps
+
+    - name: Resource Group
+      debug:
+        msg: "Go to resource group documentation: https://docs.ansible.com/ansible/latest/collections/azure/azcollection/azure_rm_resourcegroup_module.html"
+
+    - name: Create Resource Group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group }}"
+        location: "{{ location }}"
+
+    - name: Container Instance
+      debug:
+        msg: "Go to container instance documentation: https://docs.ansible.com/ansible/latest/collections/azure/azcollection/azure_rm_containerinstance_module.html"
+
+    - name: Create a nginx container in a container group with 1 core and 1GB of memory.
+      shell: |
+        az container create --name {{ instance_name }} --image {{ image }} --cpu 1 --memory 1

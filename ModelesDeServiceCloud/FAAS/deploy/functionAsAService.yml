@@ -1,0 +1,121 @@
+---
+- hosts: localhost
+  connection: local
+
+  vars:
+    resource_group: ansible-rg
+    az_plan_name: appservice-plan
+    storage_account_name: "2024baschelor2"
+
+  tasks:
+  - name: Login to azure
+    shell: az login --username "{{lookup('env', 'email')}}" --password "{{lookup('env', 'password')}}"
+    register: ps
+
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: eastus
+
+  - name: Create an Azure App Service Plan
+    azure_rm_appserviceplan:
+      name: "{{az_plan_name}}"
+      is_linux: true
+      number_of_workers: 1
+      resource_group: "{{ resource_group }}"
+      sku: S1
+
+  - name: Create a Storage Account for Azure Function
+    #azure_rm_storageaccount:
+    #  resource_group: "{{ resource_group }}"
+    #  name: "{{storage_account_name}}"
+    #  kind: StorageV2
+    #  account_type: Standard_LRS
+    shell: |
+      az storage account create \
+        -n {{storage_account_name}} \
+        -g {{ resource_group }} \
+      -l eastus --sku Standard_LRS
+      
+    register: output
+
+  - name: Create container based function app
+    azure_rm_functionapp:
+      resource_group: "{{ resource_group }}"
+      name: mario-33000-whoiam
+      storage_account: "{{storage_account_name}}"
+      plan:
+        resource_group: "{{ resource_group }}"
+        name: "{{az_plan_name}}"
+      container_settings:
+        name: maissacrement/azure-functionapp:0.0.1
+        registry_server_url: index.docker.io
+
+
+  #- name: Create ressources groupe
+  #  shell: |
+  #    az group create -l eastus -n myRss
+#
+  #- name: Init with az-cli Microsoft.Web
+  #  shell: |
+  #    az functionapp plan update -g MyResourceGroup -n myAppPlan --max-burst 20 --sku F1
+  #    az functionapp config container set \
+  #      --name myFunctionApp \
+  #      --resource-group myResourceGroup \
+  #      --registry-server index.docker.io \
+  #      --image maissacrement/azure-functionapp:latest
+#
+  #    az functionapp plan create --name myPlan2 --resource-group myResourceGroup --location "centralus" --sku B1
+#
+  #    az functionapp create \
+  #      --name codesanook-example-function-app \
+  #      --storage-account csexamplestorageaccount \
+  #      --consumption-plan-location southeastasia \
+  #      --resource-group codesanook-example-resource-group \
+  #      --os-type Linux \
+  #      --runtime python \
+  #      --functions-version 4 \
+  #      --disable-app-insights true
+#
+  #    az webapp config container set --docker-custom-image-name maissacrement/azure-functionapp:latest --name MyWebApp --resource-group MyResourceGroup
+  #    az functionapp plan show --name myAppPlan --resource-group MyResourceGroup
+  #    az functionapp plan update --name myAppPlan --resource-group MyResourceGroup --sku F1
+  #    az webapp create --resource-group MyResourceGroup \
+  #      --name MyWebApp \
+  #      --plan myPlan \
+  #      --deployment-container-image-name maissacrement/azure-functionapp
+  #  register: ps
+#
+  #- debug: 
+  #    var: ps.stdout_lines
+#
+#
+  #- name: PUSH and UPDATE images in function app container
+  #  shell: |
+  #    az functionapp config container set \
+  #      --registry-server index.docker.io \
+  #      --image maissacrement/azure-functionapp:latest \
+  #      --name myFunctionApp --resource-group myResourceGroup
+#
+  #
+##
+  #- name: create an account
+  #  azure_rm_storageaccount:
+  #    resource_group: myResourceGroup
+  #    name: clh0002
+  #    type: Standard_RAGRS
+  #    tags:
+  #      testing: testing
+  #      delete: on-exit
+#
+  #- name: Create container based function app
+  #  azure_rm_functionapp:
+  #    resource_group: myResourceGroup
+  #    name: myFunctionApp
+  #    storage_account: clh0002
+  #    plan:
+  #      resource_group: myResourceGroup
+  #      name: myAppPlan
+  #    container_settings:
+  #      name: maissacrement/azure-functionapp:latest
+  #      registry_server_url: index.docker.io

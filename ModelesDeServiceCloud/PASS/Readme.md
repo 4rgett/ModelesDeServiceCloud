@@ -1,0 +1,3 @@
+# PAAS
+
+Azure offre une gamme de services Platform-as-a-Service (PaaS) qui simplifient l'administration système en déchargeant les utilisateurs de la gestion des mises à jour et du versionnage. Microsoft prend en charge l'ensemble de ces tâches, permettant ainsi aux utilisateurs de se concentrer sur le développement et le déploiement de leurs applications sans se soucier des aspects liés à l'infrastructure sous-jacente.

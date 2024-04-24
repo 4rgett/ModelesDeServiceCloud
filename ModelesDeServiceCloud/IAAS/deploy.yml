@@ -1,0 +1,117 @@
+---
+- hosts: localhost
+  connection: local
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    vnet_name: vnet-bridge
+    vnet_subnet: subnet33
+    public_ip_name: myDomain
+    security_group_name: networkSecurityGroup
+
+  tasks:
+    # Connexion à Azure
+    - name: Login to Azure
+      shell: az login --username "{{lookup('env', 'email')}}" --password "{{lookup('env', 'password')}}"
+      register: ps
+
+    # Documentation de la ressource de groupe
+    - name: Resource Group Documentation
+      debug:
+        msg: "Documentation: https://docs.ansible.com/ansible/latest/collections/azure/azcollection/azure_rm_resourcegroup_module.html"
+
+    # Création du groupe de ressources
+    - name: Create Resource Group
+      azure_rm_resourcegroup:
+        name: ansible-rg
+        state: present
+        location: francecentral
+
+    # Documentation du réseau virtuel
+    - name: Virtual Network Documentation
+      debug:
+        msg: "Documentation: https://docs.ansible.com/ansible/latest/collections/azure/azcollection/azure_rm_virtualnetwork_module.html"
+
+    # Création du réseau virtuel
+    - name: Create Virtual Network
+      azure_rm_virtualnetwork:
+        resource_group: ansible-rg
+        name: "{{ vnet_name }}"
+        address_prefixes:
+          - "10.33.0.0/16"
+        state: present
+
+    # Création du sous-réseau
+    - name: Create Subnet
+      azure_rm_subnet:
+        resource_group: ansible-rg
+        name: "{{ vnet_subnet }}"
+        virtual_network_name: "{{ vnet_name }}"
+        address_prefix: "10.33.0.0/24"
+        state: present
+
+    # Documentation de l'adresse IP publique
+    - name: Public IP Address Documentation
+      debug:
+        msg: "Documentation: https://docs.ansible.com/ansible/latest/collections/azure/azcollection/azure_rm_publicipaddress_module.html"
+
+    # Création de l'adresse IP publique
+    - name: Create Public IP Address
+      azure_rm_publicipaddress:
+        resource_group: ansible-rg
+        name: "{{ public_ip_name }}"
+        allocation_method: Static
+        state: present
+      register: output_ip_address
+
+    # Affichage de l'adresse IP publique
+    - name: Output Public IP
+      debug:
+        msg: "The public IP is {{ output_ip_address.state.ip_address }}"
+
+    # Documentation du groupe de sécurité réseau
+    - name: Network Security Group Documentation
+      debug:
+        msg: "Documentation: https://docs.ansible.com/ansible/latest/collections/azure/azcollection/azure_rm_securitygroup_module.html"
+
+    # Création du groupe de sécurité réseau
+    - name: Create Network Security Group
+      azure_rm_securitygroup:
+        resource_group: ansible-rg
+        name: "{{ security_group_name }}"
+        state: present
+
+    # Documentation de l'interface réseau
+    - name: Network Interface Documentation
+      debug:
+        msg: "Documentation: https://docs.ansible.com/ansible/latest/collections/azure/azcollection/azure_rm_networkinterface_module.html"
+
+    # Création de l'interface réseau
+    - name: Create Network Interface
+      azure_rm_networkinterface:
+        resource_group: ansible-rg
+        name: "{{ vnet_name }}"
+        virtual_network: "{{ vnet_name }}"
+        subnet_name: "{{ vnet_subnet }}"
+        security_group: "{{ security_group_name }}"
+        public_ip_name: "{{ public_ip_name }}"
+        state: present
+
+    # Documentation de la machine virtuelle
+    - name: Virtual Machine Documentation
+      debug:
+        msg: "Documentation: https://docs.microsoft.com/en-us/cli/azure/vm?view=azure-cli-latest#az-vm-create"
+
+    # Création de la machine virtuelle Windows
+    - name: Create Windows VM
+      shell: |
+        az vm create \
+          --resource-group ansible-rg \
+          --name testvm12 \
+          --image Win2022AzureEditionCore \
+          --public-ip-sku Standard \
+          --admin-username "{{ lookup('env', 'vm_user') }}" \
+          --admin-password "{{ lookup('env', 'vm_password') }}" \
+          --vnet-name "{{ vnet_name }}" \
+          --subnet "{{ vnet_subnet }}"  # Add this line to specify the subnet
+      # Vous pouvez ajouter d'autres paramètres ici en fonction de vos besoins
